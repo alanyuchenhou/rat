@@ -1,4 +1,4 @@
-import time
+import datetime
 import numpy as np
 from sklearn import metrics, cross_validation
 import math
@@ -25,26 +25,28 @@ def char_cnn_model(x, y):
 
 
 def main():
+    begin = datetime.datetime.now()
     batch_size = 8
-    indices = get_indices('DMRs-germ-chr20.csv', SEGMENT_LENGTH, 2)
+    indices = get_indices('DMRs-germ-chr20.csv', SEGMENT_LENGTH, None)
     segments = get_segments('rat-chr20.fa', indices, SEGMENT_LENGTH)
     x = segments['sequence']
     y = segments['label']
     processor = learn.preprocessing.ByteProcessor(SEGMENT_LENGTH)
     x = np.array(list(processor.fit_transform(x)))
     x_train, x_validation, y_train, y_validation = cross_validation.train_test_split(x, y, test_size=0.2)
-    validation_monitor = learn.monitors.ValidationMonitor(x_validation, y_validation,
-                                                          every_n_steps=(len(x_train) // batch_size),
+    n_steps = len(x_train) // batch_size
+    validation_monitor = learn.monitors.ValidationMonitor(x_validation, y_validation, every_n_steps=n_steps,
                                                           early_stopping_rounds=1)
     classifier = learn.Estimator(model_fn=char_cnn_model)
-    classifier.fit(x_train, y_train, steps=math.inf, batch_size=batch_size, monitors=[validation_monitor])
-    y_predicted = [p['class'] for p in classifier.predict(x, as_iterable=True)]
-    print('Accuracy: {0:f}'.format(metrics.accuracy_score(y, y_predicted)))
+    # classifier.fit(x_train, y_train, steps=math.inf, batch_size=batch_size, monitors=[validation_monitor])
+    print(datetime.datetime.now() - begin)
+    classifier.fit(x_train, y_train, steps=n_steps, batch_size=batch_size)
+    print(datetime.datetime.now() - begin)
+    y_predicted = [p['class'] for p in classifier.predict(x, batch_size=batch_size, as_iterable=True)]
+    print(datetime.datetime.now() - begin)
+    # print('Accuracy: {0:f}'.format(metrics.accuracy_score(y, y_predicted)))
     print(metrics.confusion_matrix(y, y_predicted))
 
 
 if __name__ == '__main__':
-    begin = time.time()
     main()
-    end = time.time()
-    print(end - begin)
