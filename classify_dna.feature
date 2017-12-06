@@ -5,7 +5,7 @@ Feature: classify dna region
 
   Scenario Outline: DMR classification
     When the classifier reads a <DNA region>
-    Then the classifier should return <whether the region is a DMR>
+    Then it should predict <whether the region is a DMR>
 
     Examples:
       | DNA region                                                   | whether the region is a DMR |
